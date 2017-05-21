@@ -1,7 +1,7 @@
 # This file is part of PeachPy package and is licensed under the Simplified BSD license.
 #    See license.rst for the full text of the license.
 
-from __future__ import absolute_import
+
 
 
 from peachpy import *
@@ -268,7 +268,7 @@ def main():
 
     if options.generate_dependencies_makefile:
         module_files = set()
-        for module in sys.modules.values():
+        for module in list(sys.modules.values()):
             add_module_files(module_files, module, include_directories)
 
         dependencies = list(sorted(module_files))

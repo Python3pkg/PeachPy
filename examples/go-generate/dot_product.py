@@ -35,7 +35,7 @@ with Function("DotProduct", (x, y, length), float_, target=uarch.default + isa.f
         for (i, ymm_x) in enumerate(ymm_xs):
             VMOVUPS(ymm_x, [reg_x + 32*i])
 
-        for (i, (ymm_acc, ymm_x)) in enumerate(zip(ymm_accs, ymm_xs)):
+        for (i, (ymm_acc, ymm_x)) in enumerate(list(zip(ymm_accs, ymm_xs))):
             VFMADD132PS(ymm_acc, ymm_x, [reg_y + 32*i])
 
         ADD(reg_x, 32*unroll_factor)

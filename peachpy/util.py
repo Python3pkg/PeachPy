@@ -109,9 +109,9 @@ def pairwise(iterable):
     import itertools
     a, b = itertools.tee(iterable)
     next(b, None)
-    return itertools.izip(a, b)
+    return zip(a, b)
 
 
 def diff(sequence):
     import operator
-    return map(operator.__sub__, pairwise(sequence))
+    return list(map(operator.__sub__, pairwise(sequence)))

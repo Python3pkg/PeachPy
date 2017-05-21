@@ -1,7 +1,7 @@
 # This file is part of PeachPy package and is licensed under the Simplified BSD license.
 #    See license.rst for the full text of the license.
 
-from __future__ import print_function
+
 import os
 import operator
 import bisect
@@ -155,13 +155,12 @@ class Function:
             else:
                 return None
 
-        go_argument_types = list(map(c_to_go_type, map(operator.attrgetter("c_type"), self.arguments)))
+        go_argument_types = list(map(c_to_go_type, list(map(operator.attrgetter("c_type"), self.arguments))))
         # Some of the C types doesn't have a Go analog
         if not(all(map(bool, go_argument_types))):
             return None
 
-        go_arguments = map(lambda name_gotype: " ".join(name_gotype),
-                           zip(map(operator.attrgetter("name"), self.arguments), go_argument_types))
+        go_arguments = [" ".join(name_gotype) for name_gotype in zip(list(map(operator.attrgetter("name"), self.arguments)), go_argument_types)]
         if self.result_type is None:
             return "func %s(%s)" % (self.name, ", ".join(go_arguments))
         else:
@@ -329,7 +328,7 @@ class Function:
         if not referenced_label_names.issubset(self._label_names):
             undefined_label_names = referenced_label_names.difference(self._label_names)
             raise ValueError("Undefined labels found: " +
-                             ", ".join(map(lambda name: ".".join(map(str, name)), undefined_label_names)))
+                             ", ".join([".".join(map(str, name)) for name in undefined_label_names]))
 
     def _remove_unused_labels(self):
         """Removes labels that are not referenced by any instruction"""
@@ -616,11 +615,9 @@ class Function:
                 self.backward_pass(propogate_avx_backward, instructions, avx_state)
 
 
-        basic_blocks = list(map(lambda start_end:
-                           BasicBlock(start_end[0], start_end[1],
+        basic_blocks = list([BasicBlock(start_end[0], start_end[1],
                                       input_registers[start_end[0]:start_end[1]],
-                                      output_registers[start_end[0]:start_end[1]]),
-                           basic_block_bounds))
+                                      output_registers[start_end[0]:start_end[1]]) for start_end in basic_block_bounds])
         # Map from block start position to BasicBlock object
         basic_blocks_map = {basic_block_start: basic_block
                             for (basic_block_start, basic_block) in zip(basic_block_starts, basic_blocks)}
@@ -643,7 +640,7 @@ class Function:
                 basic_block.output_blocks = [basic_blocks[i+1]]
         # Set input basic blocks for each basic block object
         for basic_block in basic_blocks:
-            basic_block.input_blocks = list(filter(lambda bb: basic_block in bb.output_blocks, basic_blocks))
+            basic_block.input_blocks = list([bb for bb in basic_blocks if basic_block in bb.output_blocks])
 
         # Analyze which blocks can be reached from the entry point
         basic_blocks_map[entry_position].analyze_reachability()
@@ -797,14 +794,14 @@ class Function:
 
         # Check that cl-binded registers are not mutually conflicting
         for cl_register in cl_binded_registers:
-            other_cl_registers = filter(operator.methodcaller("__ne__", cl_register), cl_binded_registers)
+            other_cl_registers = list(filter(operator.methodcaller("__ne__", cl_register), cl_binded_registers))
             conflicting_registers = self._conflicting_registers[1][cl_register]
             if any([other_register in conflicting_registers for other_register in other_cl_registers]):
                 raise RegisterAllocationError("Two conflicting virtual registers are requred to bind to cl")
 
         # Check that xmm0-binded registers are not mutually conflicting
         for xmm0_register in xmm0_binded_registers:
-            other_xmm0_registers = filter(operator.methodcaller("__ne__", xmm0_register), xmm0_binded_registers)
+            other_xmm0_registers = list(filter(operator.methodcaller("__ne__", xmm0_register), xmm0_binded_registers))
             conflicting_registers = self._conflicting_registers[3][xmm0_register]
             if any([other_register in conflicting_registers for other_register in other_xmm0_registers]):
                 raise RegisterAllocationError("Two conflicting virtual registers are requred to bind to xmm0")
@@ -1355,7 +1352,7 @@ class ABIFunction:
             else:
                 if self.abi == native_client_x86_64_abi and instruction.name != "LEA":
                     from peachpy.x86_64.operand import is_m
-                    memory_operands = list(filter(lambda op: is_m(op), instruction.operands))
+                    memory_operands = list([op for op in instruction.operands if is_m(op)])
                     if memory_operands:
                         assert len(memory_operands) == 1, \
                             "x86-64 instructions can not have more than 1 explicit memory operand"
@@ -1394,7 +1391,7 @@ class ABIFunction:
             elif isinstance(subreg, (XMMRegister, YMMRegister, ZMMRegister)):
                 output_registers.add(subreg.as_xmm)
             # Other register types are volatile registers for all x86-64 ABIs
-        return list(sorted(filter(lambda reg: reg in self.abi.callee_save_registers, output_registers)))
+        return list(sorted([reg for reg in output_registers if reg in self.abi.callee_save_registers]))
 
     def _update_stack_frame(self):
         from peachpy.x86_64.registers import GeneralPurposeRegister64, XMMRegister, rbp, rsp
@@ -1866,7 +1863,7 @@ class EncodedFunction:
         if line_separator is None:
             return code
         else:
-            return str(line_separator).join(filter(lambda line: line is not None, code))
+            return str(line_separator).join([line for line in code if line is not None])
 
     def format(self, assembly_format="peachpy", line_separator=os.linesep):
         """Formats assembly listing of the function according to specified parameters"""

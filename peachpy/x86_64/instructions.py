@@ -79,7 +79,7 @@ class Instruction(object):
                 else:
                     return text + str(self.go_name)
             else:
-                return text + "; ".join(map(lambda b: "BYTE $0x%02X" % b, self.encode())) + " // " + str(self)
+                return text + "; ".join(["BYTE $0x%02X" % b for b in self.encode()]) + " // " + str(self)
 
     def format_encoding(self, indent):
         if self.bytecode:
@@ -97,7 +97,7 @@ class Instruction(object):
     @property
     def register_objects(self):
         from peachpy.x86_64.operand import get_operand_registers
-        return sum(map(get_operand_registers, self.operands), [])
+        return sum(list(map(get_operand_registers, self.operands)), [])
 
     @property
     def available_registers(self):
@@ -121,7 +121,7 @@ class Instruction(object):
             from peachpy.x86_64.registers import Register
             input_operands = [operand for (is_input_reg, operand) in zip(self.in_regs, self.operands) if is_input_reg]
             assert len(input_operands) == 2, "Instruction forms with cancelling inputs must have two inputs"
-            assert all(map(lambda op: isinstance(op, Register), input_operands)), \
+            assert all([isinstance(op, Register) for op in input_operands]), \
                 "Both inputs of instruction form with cancelling inputs must be registers"
             if input_operands[0] == input_operands[1]:
                 return dict()
@@ -195,8 +195,8 @@ class Instruction(object):
     def encode_options(self):
         if self.encodings:
             bytecodes = [encoding(self.operands) for (_, encoding) in self._filter_encodings()]
-            min_length = min(map(len, bytecodes))
-            return filter(lambda b: len(b) == min_length, bytecodes)
+            min_length = min(list(map(len, bytecodes)))
+            return [b for b in bytecodes if len(b) == min_length]
         else:
             return bytearray()
 
